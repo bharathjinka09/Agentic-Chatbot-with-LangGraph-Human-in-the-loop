@@ -67,6 +67,23 @@ def load_conversation(thread_id):
     return state.values.get("messages", [])
 
 
+def get_conversation_title(thread_id):
+    """Return a compact sidebar title derived from the first user message."""
+
+    for message in load_conversation(thread_id):
+        if isinstance(message, HumanMessage) and isinstance(message.content, str):
+            title = " ".join(message.content.split())
+
+            if title:
+                return (
+                    f"{title[:47]}..."
+                    if len(title) > 50
+                    else title
+                )
+
+    return "New conversation"
+
+
 # ========================= HITL helper functions =========================
 
 def get_pending_interrupt(thread_id):
@@ -310,6 +327,22 @@ st.set_page_config(
     page_icon="🤖"
 )
 
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] button[kind="primary"] {
+        background-color: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+    [data-testid="stSidebar"] button[kind="primary"]:hover {
+        background-color: #1e40af;
+        border-color: #1e40af;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Display the main application title
 st.title("Agentic Chatbot with LangGraph")
 
@@ -359,7 +392,7 @@ st.sidebar.title("My Conversations")
 
 
 # Create a button for starting a new conversation
-if st.sidebar.button("New Chat"):
+if st.sidebar.button("+ New Chat", type="primary"):
 
     # Reset the current chat and create a new thread
     reset_chat()
@@ -374,7 +407,7 @@ for thread_id in st.session_state["chat_threads"][::-1]:
 
     # Create one sidebar button for every conversation
     if st.sidebar.button(
-        str(thread_id),
+        get_conversation_title(thread_id),
         key=thread_id
     ):
 
