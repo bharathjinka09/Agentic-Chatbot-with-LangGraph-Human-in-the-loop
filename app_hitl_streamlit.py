@@ -67,6 +67,23 @@ def load_conversation(thread_id):
     return state.values.get("messages", [])
 
 
+def format_message_content(content):
+    """Extract displayable text from LangChain's structured message content."""
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        return "".join(
+            block.get("text", "")
+            if isinstance(block, dict)
+            else str(block)
+            for block in content
+        )
+
+    return str(content)
+
+
 def get_conversation_title(thread_id):
     """Return a compact sidebar title derived from the first user message."""
 
@@ -439,7 +456,7 @@ for thread_id in st.session_state["chat_threads"][::-1]:
             # Convert the LangChain message into a dictionary
             temp_messages.append({
                 "role": role,
-                "content": message.content
+                "content": format_message_content(message.content)
             })
 
         # Replace the current UI history with the selected conversation
