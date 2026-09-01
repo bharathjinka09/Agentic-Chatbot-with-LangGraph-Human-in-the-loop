@@ -38,6 +38,7 @@ At runtime, the application also creates these local artifacts:
 - A Google AI API key for Gemini chat and embeddings.
 - A Tavily API key for web search.
 - An OpenWeather API key for weather queries.
+- A LangSmith API key only when tracing is enabled.
 - Internet access for Gemini, Tavily, OpenWeather, and Alpha Vantage requests.
 
 The stock quote tool currently contains its Alpha Vantage key in the source code. No additional environment variable is required for that tool as the project is currently written, though moving that key to `.env` is recommended before sharing or deploying the application.
@@ -78,9 +79,15 @@ The stock quote tool currently contains its Alpha Vantage key in the source code
    GOOGLE_API_KEY=your_google_ai_api_key
    TAVILY_API_KEY=your_tavily_api_key
    OPENWEATHER_API_KEY=your_openweather_api_key
+
+   # Optional: trace LangChain and LangGraph activity in LangSmith
+   LANGSMITH_TRACING=true
+   LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+   LANGSMITH_API_KEY=your_langsmith_api_key
+   LANGSMITH_PROJECT=agentic-chatbot
    ```
 
-   `python-dotenv` loads this file when the backend starts. Keep `.env` out of source control because it contains secrets.
+   `python-dotenv` loads this file when the backend starts. Keep `.env` out of source control because it contains secrets. `OPENAI_API_KEY` is not required by the current implementation.
 
 5. Start the Streamlit application.
 
@@ -97,8 +104,12 @@ The stock quote tool currently contains its Alpha Vantage key in the source code
 | `GOOGLE_API_KEY` | Gemini chat model and document embeddings | Create an API key in Google AI Studio. |
 | `TAVILY_API_KEY` | Tavily web-search tool | Create an API key from Tavily. |
 | `OPENWEATHER_API_KEY` | OpenWeather geocoding and current-weather endpoints | Create an API key from OpenWeather. |
+| `LANGSMITH_TRACING` | Enables optional LangSmith tracing when set to `true` | Set to `true` only when you want traces. |
+| `LANGSMITH_ENDPOINT` | LangSmith API endpoint | Use `https://api.smith.langchain.com` for LangSmith Cloud. |
+| `LANGSMITH_API_KEY` | Authenticates optional LangSmith tracing | Create an API key in LangSmith. |
+| `LANGSMITH_PROJECT` | Names the LangSmith project that receives traces | Choose an existing project name or a new name. |
 
-The weather tool returns a clear missing-key message when `OPENWEATHER_API_KEY` is not configured. Gemini and Tavily initialization may fail at startup or at first use when their credentials are unavailable.
+The weather tool returns a clear missing-key message when `OPENWEATHER_API_KEY` is not configured. Gemini and Tavily initialization may fail at startup or at first use when their credentials are unavailable. LangSmith variables are optional and are only needed to capture traces.
 
 ## Using the Application
 
