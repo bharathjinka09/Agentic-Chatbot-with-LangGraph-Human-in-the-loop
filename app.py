@@ -19,7 +19,6 @@ import tempfile
 import os
 
 
-
 # Generate a unique thread ID for each new conversation
 def generate_thread_id():
     return str(uuid.uuid4())
