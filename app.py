@@ -1,4 +1,4 @@
-from agentic_chatbot_hitl_backend import (
+from backend import (
     chatbot,
     get_all_threads,
     ingest_rag_document

@@ -21,8 +21,8 @@ A local Streamlit chatbot that uses a LangGraph workflow, Google Gemini, and a c
 
 | File | Purpose |
 | --- | --- |
-| `app_hitl_streamlit.py` | Streamlit user interface, chat threading, PDF upload handling, and approval controls. |
-| `agentic_chatbot_hitl_backend.py` | LangGraph workflow, Gemini model, tool definitions, PDF ingestion, FAISS retrieval, and SQLite persistence. |
+| `app.py` | Streamlit user interface, chat threading, PDF upload handling, and approval controls. |
+| `backend.py` | LangGraph workflow, Gemini model, tool definitions, PDF ingestion, FAISS retrieval, and SQLite persistence. |
 | `requirements.txt` | Python dependencies required by the application. |
 
 At runtime, the application also creates these local artifacts:
@@ -92,7 +92,7 @@ The stock quote tool currently contains its Alpha Vantage key in the source code
 5. Start the Streamlit application.
 
    ```powershell
-   streamlit run app_hitl_streamlit.py
+   streamlit run app.py
    ```
 
    Streamlit will print a local URL, usually `http://localhost:8501`. Open that URL in a browser.
@@ -203,7 +203,7 @@ The next run creates a new database. Upload a PDF again before asking document-s
 | Weather says the API key is missing or invalid | OpenWeather key is absent, inactive, or invalid. | Set `OPENWEATHER_API_KEY`; newly created keys can take time to activate. |
 | PDF question fails before a PDF has been uploaded | No local FAISS index exists. | Attach and submit a PDF, wait for processing to finish, then ask the question again. |
 | A prior PDF is no longer available | Another PDF was uploaded and replaced the shared index. | Upload the desired PDF again. |
-| Port 8501 is busy | Another Streamlit process is running. | Stop that process or start on another port with `streamlit run app_hitl_streamlit.py --server.port 8502`. |
+| Port 8501 is busy | Another Streamlit process is running. | Stop that process or start on another port with `streamlit run app.py --server.port 8502`. |
 
 ## Security and Deployment
 
