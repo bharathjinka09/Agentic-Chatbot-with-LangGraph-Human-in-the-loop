@@ -1,4 +1,4 @@
-# Agentic Chatbot with LangGraph (Human-in-the-loop)
+# Agentic Chatbot with LangGraph (Human-in-the-loop) and MLflow observability integration
 
 A local Streamlit chatbot that uses a LangGraph workflow, Google Gemini, and a collection of tools for web search, weather, stock quotes, calculations, PDF question answering, and human-approved simulated stock purchases.
 
