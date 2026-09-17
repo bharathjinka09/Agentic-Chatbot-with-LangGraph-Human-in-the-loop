@@ -16,6 +16,7 @@ A local Streamlit chatbot that uses a LangGraph workflow, Google Gemini, and a c
 - Human-in-the-loop approval for simulated stock purchases. A requested purchase pauses the graph until it is explicitly approved or rejected in the UI.
 - Streaming assistant output and tool-status indicators.
 - Recovery of saved chats and unresolved purchase approvals after Streamlit reruns, browser refreshes, or switching conversations.
+- MLflow tracing for LangGraph nodes, LLM calls, tools, and retrieval activity, grouped by conversation turn.
 
 ## Architecture
 
@@ -30,6 +31,8 @@ At runtime, the application also creates these local artifacts:
 | Path | Purpose |
 | --- | --- |
 | `chatbot.db` | SQLite checkpoints for LangGraph conversation state and interrupted purchase requests. |
+| `mlflow.db` | Local MLflow tracking database containing experiments, runs, and trace metadata. |
+| `mlruns/` | MLflow file-based artifacts created by MLflow components or prior local runs. |
 | `faiss_db/` | FAISS index generated from the most recently uploaded PDF. |
 
 ## Prerequisites
@@ -73,7 +76,13 @@ The stock quote tool currently contains its Alpha Vantage key in the source code
    python -m pip install -r requirements.txt
    ```
 
-4. Create a `.env` file in the repository root.
+4. Create a `.env` file in the repository root by copying the provided template, then replace each placeholder with a real key.
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+   The template contains the common Google, Tavily, OpenWeather, and optional LangSmith variables. Add the optional MLflow settings shown below when you want to configure MLflow explicitly; otherwise the backend uses MLflow with the local `sqlite:///mlflow.db` tracking URI by default.
 
    ```dotenv
    GOOGLE_API_KEY=your_google_ai_api_key
@@ -85,6 +94,11 @@ The stock quote tool currently contains its Alpha Vantage key in the source code
    LANGSMITH_ENDPOINT=https://api.smith.langchain.com
    LANGSMITH_API_KEY=your_langsmith_api_key
    LANGSMITH_PROJECT=agentic-chatbot
+
+   # Optional MLflow settings; local SQLite tracking is used by default
+   MLFLOW_ENABLED=true
+   MLFLOW_TRACKING_URI=sqlite:///mlflow.db
+   MLFLOW_EXPERIMENT_NAME=agentic-chatbot
    ```
 
    `python-dotenv` loads this file when the backend starts. Keep `.env` out of source control because it contains secrets. `OPENAI_API_KEY` is not required by the current implementation.
@@ -108,6 +122,19 @@ The stock quote tool currently contains its Alpha Vantage key in the source code
 | `LANGSMITH_ENDPOINT` | LangSmith API endpoint | Use `https://api.smith.langchain.com` for LangSmith Cloud. |
 | `LANGSMITH_API_KEY` | Authenticates optional LangSmith tracing | Create an API key in LangSmith. |
 | `LANGSMITH_PROJECT` | Names the LangSmith project that receives traces | Choose an existing project name or a new name. |
+| `MLFLOW_ENABLED` | Enables MLflow tracing | Set to `false` to disable MLflow instrumentation. |
+| `MLFLOW_TRACKING_URI` | MLflow tracking backend | Defaults to `sqlite:///mlflow.db`; can point to an MLflow server. |
+| `MLFLOW_EXPERIMENT_NAME` | MLflow experiment name | Defaults to `agentic-chatbot`. |
+
+## View MLflow Traces
+
+From a second terminal, start the MLflow server from the repository root:
+
+```powershell
+mlflow server --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000
+```
+
+Open `http://127.0.0.1:5000` in a browser, then select the `agentic-chatbot` experiment. Each user turn and human-approval resume is recorded as a parent run, with automatic child traces for the LangGraph workflow, model calls, tools, and retrieval.
 
 The weather tool returns a clear missing-key message when `OPENWEATHER_API_KEY` is not configured. Gemini and Tavily initialization may fail at startup or at first use when their credentials are unavailable. LangSmith variables are optional and are only needed to capture traces.
 
@@ -188,6 +215,7 @@ Stop Streamlit before deleting generated state. To remove all chat history and t
 
 ```powershell
 Remove-Item chatbot.db -ErrorAction SilentlyContinue
+Remove-Item mlflow.db -ErrorAction SilentlyContinue
 Remove-Item faiss_db -Recurse -Force -ErrorAction SilentlyContinue
 ```
 

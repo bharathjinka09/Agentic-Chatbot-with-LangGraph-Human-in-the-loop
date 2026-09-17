@@ -1,11 +1,43 @@
+import os
+import sqlite3
+from contextlib import contextmanager
+from typing import Any, Iterator, TypedDict, Annotated
+
+import mlflow
+import mlflow.langchain as mlflow_langchain
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+MLFLOW_ENABLED = os.getenv("MLFLOW_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
+if MLFLOW_ENABLED:
+    mlflow.set_tracking_uri(
+        os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+    )
+
+    if not os.getenv("MLFLOW_EXPERIMENT_ID"):
+        mlflow.set_experiment(
+            os.getenv("MLFLOW_EXPERIMENT_NAME", "agentic-chatbot")
+        )
+
+    mlflow_langchain.autolog(
+        log_traces=True,
+        silent=True,
+    )
+
+
 from langgraph.graph import StateGraph, START, END
-from typing import TypedDict, Annotated
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.message import add_messages
-import sqlite3
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_tavily import TavilySearch
 from langchain_core.tools import tool
@@ -15,12 +47,34 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
-import os 
-from typing import Any
 from langgraph.types import interrupt, Command
 
 
-load_dotenv()
+@contextmanager
+def mlflow_chat_run(
+    run_name: str,
+    thread_id: str,
+    input_text: str | None = None,
+) -> Iterator[None]:
+    """Group one user turn and its autologged graph spans into a run."""
+
+    if not MLFLOW_ENABLED:
+        yield
+        return
+
+    with mlflow.start_run(
+        run_name=run_name,
+        tags={
+            "thread_id": thread_id,
+            "application": "agentic-chatbot",
+        },
+    ):
+        mlflow.log_param("thread_id", thread_id)
+
+        if input_text is not None:
+            mlflow.log_param("input_length", len(input_text))
+
+        yield
 
 
 # LLM 

@@ -1,7 +1,8 @@
 from backend import (
     chatbot,
     get_all_threads,
-    ingest_rag_document
+    ingest_rag_document,
+    mlflow_chat_run,
 )
 
 from langchain_core.messages import (
@@ -17,7 +18,6 @@ import streamlit as st
 import uuid
 import tempfile
 import os
-
 
 
 # Generate a unique thread ID for each new conversation
@@ -287,9 +287,13 @@ def resume_hitl_execution(decision):
                             yield message_chunk.content
 
             # Display the streamed final answer
-            resumed_ai_message = st.write_stream(
-                resumed_ai_only_stream()
-            )
+            with mlflow_chat_run(
+                "chat_resume",
+                interrupted_thread_id,
+            ):
+                resumed_ai_message = st.write_stream(
+                    resumed_ai_only_stream()
+                )
 
             # Check whether another interrupt occurred
             next_interrupt = get_pending_interrupt(
@@ -729,9 +733,14 @@ if user_input:
 
             # =============================================================
 
-        ai_message = st.write_stream(
-            ai_only_stream()
-        )
+        with mlflow_chat_run(
+            "chat_turn",
+            st.session_state["thread_id"],
+            user_input,
+        ):
+            ai_message = st.write_stream(
+                ai_only_stream()
+            )
 
         # Finalize only if a tool was actually used
         if status_holder["box"] is not None:
